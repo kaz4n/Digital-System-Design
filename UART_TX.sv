@@ -25,8 +25,10 @@
         begin 
             if(reset) begin 
             state <= TX_IDLE; 
+            bit_count <= 3'b000;
+            tx_data_copy <= 8'b0;
             end 
-                else 
+                else begin 
                 state <= next_state; 
                 if(state == TX_IDLE && tx_ready && tx_valid) begin tx_data_copy<= tx_data_input; end  
 
@@ -38,7 +40,7 @@
         
                 bit_count <= bit_count + 1; 
                 
-                end  end
+                end end  end
         end 
 
         // Next state logic
@@ -55,6 +57,8 @@
             end 
 
             TX_START: begin if (baud) next_state= TX_DATA;
+                            else begin next_state = TX_START; end
+
             end 
 
             TX_DATA: begin
@@ -62,10 +66,14 @@
                 begin 
                 next_state= TX_STOP;
                 end 
+                else begin next_state = TX_DATA; end
                 
             end
-            TX_STOP: if(baud)
+            TX_STOP: 
+            if(baud)
             next_state = TX_IDLE;
+            else begin next_state = TX_STOP; end
+
             default:
             begin 
                 next_state = TX_IDLE;
@@ -86,7 +94,7 @@
                 tx_ready       = 1'b1;
             end
             TX_START: begin
-                tx_data_output = 1'b0;
+            tx_data_output = 1'b0;
             tx_ready = 1'b0; end 
 
 
@@ -100,7 +108,7 @@
 
             TX_STOP: begin
             tx_data_output = 1'b1;
-            tx_ready = 1'b1;
+            tx_ready = 1'b0;
             end 
 
             default: begin
