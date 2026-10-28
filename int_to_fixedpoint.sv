@@ -28,8 +28,12 @@ module #(parameter int IN_W,
   logic signed [WORK_W-1:0] r;
   logic signed [WORK_W-1:0] H;
   logic signed [WORK_W-1:0] rounded;
+  logic [2:0] ROUND; 
 
-  logic increment;
+assign q = x >>> S ;
+assign r = x - (q<<S) ;
+ assign H = (1'b1 << (S -1));
+  assign rounded = ;
 
   always_comb
   begin
@@ -67,6 +71,8 @@ module #(parameter int IN_W,
       MIN = '0;
     end
   end
+
+
 
   //rounding modes
   always_comb
