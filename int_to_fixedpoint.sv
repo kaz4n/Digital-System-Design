@@ -28,31 +28,41 @@ module #(parameter int IN_W,
   logic signed [WORK_W-1:0] r;
   logic signed [WORK_W-1:0] H;
   logic signed [WORK_W-1:0] rounded;
-  logic [2:0] ROUND; 
+logic increment;
+
 
 assign q = x >>> S ;
 assign r = x - (q<<S) ;
  assign H = (1'b1 << (S -1));
   assign rounded = ;
 
-  always_comb
-  begin
-    if (S = 0 )
-    begin
-      temp = x;
-      if
-      y = x;
-
-  end
-  else if(S > 0)
-    begin
-      y = (x >>> S);
-    end
+always_comb begin
+    x_ext = '0;
+    q = '0;
+    r = '0;
+    H = '0;
+    //make sure last bit is for sign
+    if (IN_SIGNED == 1)
+        x_ext = $signed(x);
     else
-      y = (x << S);
+      //put last bit 0 
+        x_ext = $signed({1'b0, x});
 
-  end
-
+        //input fraction bits are more than the output 
+    if (S > 0) begin
+        q = x_ext >>> S; // get qoutient 
+        r = x_ext - (q <<< S); //reminder 
+        H = {{(WORK_W-1){1'b0}}, 1'b1} << (S-1); 
+    end
+    //no difference in fracion bits width 
+    else if (S == 0) begin
+        q = x_ext;
+    end
+    //output fraction bits are more than the input  
+    else begin
+        q = x_ext <<< (-S);
+    end
+end
 
   //MIN and MAX init
   always_comb
@@ -72,36 +82,46 @@ assign r = x - (q<<S) ;
     end
   end
 
+  //wrong stuff
+
+  // always_comb begin 
+  //   //
+  //   if((x < 0) && r != 0) ROUND = 1'b001; 
+  //   //
+  //   else if (r >= H) ROUND = 2'b010;
+  //   //
+  //   else if ( ( r>H ) || ((r == H)&&(x>=0))) ROUND = 2'b010;
+  //   //
+  //   else if (( r>H ) || ((r == H)&&(q[0]))) ROUND = 2'b010;
+  //   //floor mode 
+  //   else ROUND = 3'b000;
+
+  // end
+
 
 
   //rounding modes
-  always_comb
-  begin
-    case (ROUND)
-      3'b000:
-      begin
+always_comb begin
+    increment = 1'b0;
 
-      end
-      3'b001:
-      begin
-
-      end
-      3'b010:
-      begin
-
-      end
-      3'b011:
-      begin
-
-      end
-      3'b100:
-      begin
-
-      end
-      default:
-      endcase
-  end
-
+    if (S > 0) begin
+        case (ROUND)
+            3'b000: increment = 1'b0; // FLOOR
+            //
+            3'b001: increment = (x_ext < 0) && (r != 0);
+            //
+            3'b010: increment = (r >= H);
+            //
+            3'b011: increment = (r > H) ||
+                               ((r == H) && (x_ext >= 0));
+//
+            3'b100: increment = (r > H) ||
+                                 ((r == H) && q[0]);
+            //
+            default: increment = 1'b0;
+        endcase
+    end
+end
 
 
 endmodule
