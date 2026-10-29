@@ -1,13 +1,13 @@
 // Write your modules here!
-module #(parameter int IN_W,
-           parameter int OUT_W,
-           parameter int IN_F,
-           parameter int OUT_F,
-           parameter int IN_SIGNED,
-           parameter int OUT_SIGNED,
-           parameter int ROUND,
-           parameter int SAT
-          ) circuit(
+module circuit #(parameter int IN_W = 8,
+           parameter int OUT_W = 10,
+           parameter int IN_F = 4,
+           parameter int OUT_F = 5,
+           parameter int IN_SIGNED = 0,
+           parameter int OUT_SIGNED = 0,
+           parameter int ROUND = 3'b001,
+           parameter int SAT = 0
+          ) (
             input logic [IN_W - 1 : 0] x,
             output logic [OUT_W - 1 : 0] y,
             output ovf, inx
@@ -34,7 +34,7 @@ logic increment;
 assign q = x >>> S ;
 assign r = x - (q<<S) ;
  assign H = (1'b1 << (S -1));
-  assign rounded = ;
+ 
 
 always_comb begin
     x_ext = '0;
@@ -52,13 +52,18 @@ always_comb begin
     if (S > 0) begin
         q = x_ext >>> S; // get qoutient 
         r = x_ext - (q <<< S); //reminder 
-        H = {{(WORK_W-1){1'b0}}, 1'b1} << (S-1); 
+        H = {{(WORK_W-1){1'b0}}, 1'b1} << (S-1); //go to the [S - 1] bit and add one on it 
+        // before xxxx_xxxxx after xxxx_xxx . S = 3,
+        // therefore add just before the decimal point on the last fraction bit
+        // meaning going to the next whole number ig.
     end
-    //no difference in fracion bits width 
+    //no difference in fracion bits width  
+    //HALF_AWAY
     else if (S == 0) begin
         q = x_ext;
     end
     //output fraction bits are more than the input  
+    //HALF_even
     else begin
         q = x_ext <<< (-S);
     end
@@ -107,21 +112,58 @@ always_comb begin
     if (S > 0) begin
         case (ROUND)
             3'b000: increment = 1'b0; // FLOOR
-            //
+            // Zero 
             3'b001: increment = (x_ext < 0) && (r != 0);
-            //
+            // Round UP, i.e. bigger number 
             3'b010: increment = (r >= H);
-            //
+            // Round Half
             3'b011: increment = (r > H) ||
                                ((r == H) && (x_ext >= 0));
-//
+            // Round Even
             3'b100: increment = (r > H) ||
                                  ((r == H) && q[0]);
-            //
+            // Floor
             default: increment = 1'b0;
         endcase
     end
 end
+
+
+logic signed [WORK_W-1:0] max_ext;
+logic signed [WORK_W-1:0] min_ext;
+
+
+always_comb begin
+    if (OUT_SIGNED == 1) begin
+
+        max_ext = $signed(MAX);
+        min_ext = $signed(MIN);
+    end
+    else begin
+        max_ext = $signed({1'b0, MAX});
+        min_ext = '0;
+    end
+end
+
+logic signed [WORK_W-1:0] max_ext;
+logic signed [WORK_W-1:0] min_ext;
+
+
+always_comb begin
+    if (SAT == 1 && ovf == 1) begin
+        if (rounded > max_ext)
+            y = MAX;
+        else
+            y = MIN;
+    end
+    else begin
+        y = rounded[OUT_W-1:0];
+    end
+end
+
+
+assign rounded = q + increment;
+assign inx = (S > 0) && (r != 0);
 
 
 endmodule
