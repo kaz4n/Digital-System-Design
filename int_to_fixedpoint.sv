@@ -1,12 +1,12 @@
 // Write your modules here!
-module circuit #(parameter int IN_W = 8,
-           parameter int OUT_W = 10,
-           parameter int IN_F = 4,
-           parameter int OUT_F = 5,
-           parameter int IN_SIGNED = 0,
-           parameter int OUT_SIGNED = 0,
-           parameter int ROUND = 3'b001,
-           parameter int SAT = 0
+module fixed_point_converter #(IN_W       = 8,
+OUT_W      = 6,
+IN_F       = 4,
+OUT_F      = 2,
+IN_SIGNED  = 1,
+OUT_SIGNED = 1,
+ROUND      = 3'b100, // HALF_EVEN
+SAT        = 1
           ) (
             input logic [IN_W - 1 : 0] x,
             output logic [OUT_W - 1 : 0] y,
@@ -30,10 +30,6 @@ module circuit #(parameter int IN_W = 8,
   logic signed [WORK_W-1:0] rounded;
 logic increment;
 
-
-assign q = x >>> S ;
-assign r = x - (q<<S) ;
- assign H = (1'b1 << (S -1));
  
 
 always_comb begin
@@ -134,20 +130,18 @@ logic signed [WORK_W-1:0] min_ext;
 
 
 always_comb begin
-    if (OUT_SIGNED == 1) begin
+    max_ext = '0;
+    min_ext = '0;
 
-        max_ext = $signed(MAX);
-        min_ext = $signed(MIN);
+    if (OUT_SIGNED == 1) begin
+        max_ext = {{(WORK_W-OUT_W){MAX[OUT_W-1]}}, MAX};
+        min_ext = {{(WORK_W-OUT_W){MIN[OUT_W-1]}}, MIN};
     end
     else begin
-        max_ext = $signed({1'b0, MAX});
+        max_ext = {{(WORK_W-OUT_W){1'b0}}, MAX};
         min_ext = '0;
     end
 end
-
-logic signed [WORK_W-1:0] max_ext;
-logic signed [WORK_W-1:0] min_ext;
-
 
 always_comb begin
     if (SAT == 1 && ovf == 1) begin
@@ -161,6 +155,8 @@ always_comb begin
     end
 end
 
+assign ovf = (rounded > max_ext) ||
+             (rounded < min_ext);
 
 assign rounded = q + increment;
 assign inx = (S > 0) && (r != 0);
