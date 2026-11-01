@@ -188,10 +188,10 @@ module fixed_point_converter #(
   end
 
   assign ovf = (rounded > max_ext) ||
-         (rounded < min_ext);
+         (rounded < min_ext); // was there overflow
 
   assign rounded = q + increment;
-  assign inx = (S > 0) && (r != 0);
+  assign inx = (S > 0) && (r != 0); //It tells you whether any fractional information was discarded during conversion
 
 
 endmodule
