@@ -1,25 +1,30 @@
 // Write your modules here!
-module fixed_point_converter #(IN_W       = 8,
-OUT_W      = 6,
-IN_F       = 4,
-OUT_F      = 2,
-IN_SIGNED  = 1,
-OUT_SIGNED = 1,
-ROUND      = 3'b100, // HALF_EVEN
-SAT        = 1
-          ) (
-            input logic [IN_W - 1 : 0] x,
-            output logic [OUT_W - 1 : 0] y,
-            output ovf, inx
-          );
+module fixed_point_converter #(
+    parameter int IN_W       = 8,
+    parameter int OUT_W      = 6,
+    parameter int IN_F       = 4,
+    parameter int OUT_F      = 2,
+    parameter bit IN_SIGNED  = 1,
+    parameter bit OUT_SIGNED = 1,
+    parameter logic [2:0] ROUND = 3'b100,
+    parameter bit SAT        = 1
+) (
+    input  logic [IN_W-1:0] x,
+    output logic [OUT_W-1:0] y,
+    output logic ovf, inx
+);
   logic [OUT_W - 1 : 0 ] temp;
   logic [OUT_W - 1 : 0] MAX, MIN;
   localparam int S = IN_F - OUT_F;
 
+  // want all internal calculations to use signed, therefore add a bit 
+  //at the end for unsigned and leave the input as is otherwise 
   localparam int BASE_W = IN_W + (IN_SIGNED == 0 ? 1 : 0);
 
   // Wide enough for input, left shift, rounding,
   // and comparison with the output range.
+  //if the shift is to the right, meaning we are gaining more fractions
+  // we need to shift by the negative difference (i.e. S) becuase S will be negative -- S = S 
   localparam int WORK_W = BASE_W + (S < 0 ? -S : 0)
              + OUT_W + 1;
 
