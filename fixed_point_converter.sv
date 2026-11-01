@@ -25,8 +25,30 @@ module fixed_point_converter #(
   // and comparison with the output range.
   //if the shift is to the right, meaning we are gaining more fractions
   // we need to shift by the negative difference (i.e. S) becuase S will be negative -- S = S
-  localparam int WORK_W = BASE_W + (S < 0 ? -S : 0)
-             + OUT_W + 1;  //could have less bits, but increase them for safety
+  
+  //not valid always : 
+  //localparam int WORK_W = BASE_W + (S < 0 ? -S : 0) + OUT_W + 1;  
+
+
+
+  // The original WORK_W formula may be too small when S is large.
+// For right shifts, rounding requires H = 2^(S-1), the halfway threshold.
+// If WORK_W <= S, H cannot fit in the signed WORK_W-bit vector
+// The shift would truncate H to zero, causing incorrect rounding
+// (e.g., HALF_UP could increment even when the input is zero).
+localparam int BASE_WORK_W =
+    BASE_W + (S < 0 ? -S : 0)+ OUT_W + 1; //could have less bits, but increase them for safety
+
+//some representation we could have fraction bits being more than the full bit width, which is weird, but whatever ^_^
+
+
+    // Ensure WORK_W >= S+1 so H fits as a positive signed value
+// This also supports formats where fractional bits exceed total width.
+// Otherwise, keep the original conservative working width
+localparam int WORK_W =
+    (S > 0 && BASE_WORK_W <= S)
+    ? S + 1
+    : BASE_WORK_W; //BASE_WORK_W is like before, the other state is when you have F>width
 
   logic signed [WORK_W-1:0] x_ext;
   logic signed [WORK_W-1:0] q;
