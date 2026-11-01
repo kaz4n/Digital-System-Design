@@ -12,31 +12,34 @@ module fxp_add_sub #(
     parameter int Y_OUT_F = 16,
     parameter bit Y_OUT_SIGN = 1,
     parameter logic [2:0] ROUND = 3'b100,
-    parameter bit SAT = 1,
-    parameter bit add_or_sub = 1'b1)
+    parameter bit SAT = 1)
 
    (
       input logic [A_IN_W - 1 : 0] a,
-      input logic [B_IN_W - 1 : 0] b,
+      input logic [B_IN_W - 1 : 0] b, 
+      input logic add_or_sub,
       output logic [Y_OUT_W - 1 : 0] y,
     output logic ovf, inx 
     );
 
   localparam int S = A_IN_F - B_IN_F ;
 
-  localparam WORK_W = ((A_IN_W >= B_IN_W) ? (A_IN_W + 1) : (B_IN_W + 1)) + $abs(S);
+  localparam int ABS_S = (S < 0) ? -S : S;
+  localparam WORK_W = ((internal_A_IN_W >= internal_B_IN_W) ? (internal_A_IN_W + 1) : (internal_B_IN_W + 1)) + ABS_S;
 
   localparam internal_A_IN_W = A_IN_W + ((~A_IN_SIGN) ? 1  : 0) ;
   localparam internal_B_IN_W = B_IN_W + ((~B_IN_SIGN) ? 1  : 0) ;
 
+localparam WORK_F = (S>0) ? (A_IN_F) : ( B_IN_F);
+
   logic signed [internal_A_IN_W - 1 :0] internal_a ;
   logic signed [internal_B_IN_W - 1:0] internal_b;
 
-  logic [WORK_W - 1 : 0] internal_out ;
+  logic signed [WORK_W - 1 : 0] internal_out ;
 
 
   fixed_point_converter #(.IN_W(WORK_W), .OUT_W(Y_OUT_W), .IN_F(WORK_F), .OUT_F(Y_OUT_F),
-                          .IN_SIGNED(1'b1), .OUT_SIGNED(Y_OUT_SIGN), .ROUND(ROUND), .SAT(SAT)) converter (.x(raw), .y(y), .inx(inx), .ovf(ovf) );
+                          .IN_SIGNED(1'b1), .OUT_SIGNED(Y_OUT_SIGN), .ROUND(ROUND), .SAT(SAT)) converter (.x(internal_out), .y(y), .inx(inx), .ovf(ovf) );
 
 
   always_comb
@@ -53,25 +56,16 @@ module fxp_add_sub #(
 
   end
 
+logic signed [WORK_W-1:0] a_aligned;
+logic signed [WORK_W-1:0] b_aligned;
 
-  always_comb
-  begin
-    internal_a = a;
-    internal_b = b;
-    if (S == 0)
-    begin
-      internal_out = (add_or_sub) ? (internal_a + internal_b) : (internal_a - internal_b);
-    end
-    else if (S > 0)
-    begin
-      internal_b = b << S;
-      internal_out = (add_or_sub) ? (internal_a + internal_b) : (internal_a - internal_b);
-    end
-    else
-    begin
-      internal_b = a << S;
-      internal_out = (add_or_sub) ? (internal_a + internal_b) : (internal_a - internal_b);
-    end
-  end
+assign a_aligned =
+    $signed(internal_a) <<< ((S < 0) ? -S : 0);
+
+assign b_aligned =
+    $signed(internal_b) <<< ((S > 0) ? S : 0);
+
+    
+     assign internal_out = (add_or_sub) ? (a_aligned + b_aligned) : (a_aligned - b_aligned);
 
 endmodule
