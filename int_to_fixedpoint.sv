@@ -26,7 +26,7 @@ module fixed_point_converter #(
   //if the shift is to the right, meaning we are gaining more fractions
   // we need to shift by the negative difference (i.e. S) becuase S will be negative -- S = S 
   localparam int WORK_W = BASE_W + (S < 0 ? -S : 0)
-             + OUT_W + 1;
+             + OUT_W + 1;  //could have less bits, but increase them for safety 
 
   logic signed [WORK_W-1:0] x_ext;
   logic signed [WORK_W-1:0] q;
@@ -38,25 +38,27 @@ logic increment;
  
 
 always_comb begin
+    //they are already declared with a known width, therefore we coud use 'x for their sizes
     x_ext = '0;
     q = '0;
     r = '0;
-    H = '0;
+    H = '0; // Halfway threshold used to decide rounding
     //make sure last bit is for sign
     if (IN_SIGNED == 1)
         x_ext = $signed(x);
     else
       //put last bit 0 
-        x_ext = $signed({1'b0, x});
+        x_ext = $signed({1'b0, x}); // put last bit 
 
         //input fraction bits are more than the output 
-    if (S > 0) begin
+    if (S > 0) begin // X = q * 2**S + r , X - q * 2**S =   r 
+        //arithmetic right shifting rounds toward negative infinity
         q = x_ext >>> S; // get qoutient 
-        r = x_ext - (q <<< S); //reminder 
+        r = x_ext - (q <<< S); //reminder, between 0 to 2**S - 1 
         H = {{(WORK_W-1){1'b0}}, 1'b1} << (S-1); //go to the [S - 1] bit and add one on it 
         // before xxxx_xxxxx after xxxx_xxx . S = 3,
         // therefore add just before the decimal point on the last fraction bit
-        // meaning going to the next whole number ig.
+        // meaning it's the half point of the fraction section
     end
     //no difference in fracion bits width  
     //HALF_AWAY
