@@ -35,7 +35,7 @@ module fixed_point_converter #(
 // For right shifts, rounding requires H = 2^(S-1), the halfway threshold.
 // If WORK_W <= S, H cannot fit in the signed WORK_W-bit vector
 // The shift would truncate H to zero, causing incorrect rounding
-// (e.g., HALF_UP could increment even when the input is zero).
+// (e.g. HALF_UP could increment even when the input is zero).
 localparam int BASE_WORK_W =
     BASE_W + (S < 0 ? -S : 0)+ OUT_W + 1; //could have less bits, but increase them for safety
 
