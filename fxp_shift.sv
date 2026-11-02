@@ -107,7 +107,7 @@ end
   begin
     increment = 1'b0;
 
-    if (!direction && shamt > 0)
+if (!direction && shamt > 0 && shamt <= IN_W)
     begin
       case (ROUND)
         // FLOOR, always round towards negative infinity
@@ -145,13 +145,11 @@ end
     rounded = q + increment;
     inx = (shamt > IN_W) ? 1'b0 : (!direction && (r != 0));
    // ovf = 0;
-    // if (shamt > IN_W )
-    // begin
-    //   //ovf = 0;
-    //   inx = 0;
-    //   y = 0;
-    // end
-    // else
+    if (shamt > IN_W )
+    begin
+      y = 0;
+    end
+    else
      if (rounded<min_ext && SAT)
     begin
       //ovf = 1;
