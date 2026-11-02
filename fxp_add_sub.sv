@@ -39,12 +39,12 @@ localparam WORK_F = (S>0) ? (A_IN_F) : ( B_IN_F);
 
 
   fixed_point_converter #(.IN_W(WORK_W), .OUT_W(Y_OUT_W), .IN_F(WORK_F), .OUT_F(Y_OUT_F),
-                          .IN_SIGNED(1'b1), .OUT_SIGNED(Y_OUT_SIGN), .ROUND(ROUND), .SAT(SAT)) converter (.x(internal_out), .y(y), .inx(inx), .ovf(ovf) );
+                          .IN_SIGNED(1'b1), .OUT_SIGNED(Y_OUT_SIGN), .ROUND(ROUND), .SAT(SAT)) 
+                          converter (.x(internal_out), .y(y), .inx(inx), .ovf(ovf) );
 
 
   always_comb
   begin
-
     if (A_IN_SIGN)
       internal_a = $signed(a);
     else
@@ -53,7 +53,6 @@ localparam WORK_F = (S>0) ? (A_IN_F) : ( B_IN_F);
       internal_b = $signed(b);
     else
       internal_b = $signed({1'b0, b});
-
   end
 
 logic signed [WORK_W-1:0] a_aligned;
@@ -65,7 +64,6 @@ assign a_aligned =
 assign b_aligned =
     $signed(internal_b) <<< ((S > 0) ? S : 0);
 
-    
      assign internal_out = (add_or_sub) ? (a_aligned + b_aligned) : (a_aligned - b_aligned);
 
 endmodule
